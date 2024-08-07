@@ -14,7 +14,7 @@ RUN go mod download
 COPY .  .
 
 #command to run the application in the container
-RUN go build -0 main .
+RUN go build -o main .
 
 #Security Implementation
 #Final stage using Distroless Image
