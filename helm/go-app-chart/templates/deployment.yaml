@@ -17,13 +17,13 @@ spec:
     spec:
       containers:
       - name: go-web-application
-        image: lloyddigital/go-web-app:v1
+        image: lloyddigital/go-web-app:{{ .Values.image.tag }}  # Removed spaces around placeholder
         ports:
         - containerPort: 8080
         resources:
           requests:
-            memory: "128Mi"       # Requests for resources
+            memory: "128Mi"       
             cpu: "250m"
           limits:
-            memory: "256Mi"       # Limits on resource usage
+            memory: "256Mi"       
             cpu: "500m"
