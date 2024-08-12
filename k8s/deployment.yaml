@@ -1,23 +1,29 @@
-apiVersion: v1
-kind: deployment
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name:  go-web-application
+  namespace: go-web
+  name: go-web-application
   labels: 
     app: go-web-application
 spec:
-  replicas: 1
+  replicas: 2
   selector:
-    matchLabels:
-      app: go-web-application
+    matchLabels:                
+      app: go-web-application    
   template:
     metadata:
       labels:
-        app: go-web-application
+        app: go-web-application  
     spec:
       containers:
       - name: go-web-application
         image: lloyddigital/go-web-app:v1
         ports:
         - containerPort: 8080
-        
-
+        resources:
+          requests:
+            memory: "128Mi"       # Requests for resources
+            cpu: "250m"
+          limits:
+            memory: "256Mi"       # Limits on resource usage
+            cpu: "500m"
