@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-# Pathsto ignore when updating values and  do not want to triger the pipeline
+    # Paths to ignore when updating values and not triggering the pipeline
     paths-ignore:
       - 'README.md'
       - 'helm/**'
@@ -14,9 +14,9 @@ on:
       - main
 
 # Define environment variables for the workflow
-#env:
-#  DOCKER_IMAGE: lloyddigital/go-web-app
-#  DOCKER_TAG: ${{ github.sha }}
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/go-web-application
+  DOCKER_TAG: ${{ github.run_id }}
 
 jobs:
   build:
@@ -31,18 +31,15 @@ jobs:
       with:
         go-version: '1.22'
 
-  #  - name: Install dependencies
-  #   run: go mod download
-
     - name: Run Tests
       run: go test ./...
-      
-# Run a static code analysis
+
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v6
       with:
         version: v1.56.2
-    - name: Setup up Docker Buildx
+
+    - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v1
 
     - name: Login to DockerHub
@@ -51,34 +48,33 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and Push docker image
+    - name: Build and Push Docker image
       uses: docker/build-push-action@v6
       with:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{secrets.DOCKERHUB_USERNAME}}/go-web-application:${{github.run_id}}
+        tags: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
 
- # deploy:
- #  needs: build
-  #  runs-on: ubuntu-latest
+# Uncomment if you want to deploy
+# deploy:
+#   needs: build
+#   runs-on: ubuntu-latest
+#
+#   steps:
+#   - name: Checkout code
+#     uses: actions/checkout@v3
+#
+#   - name: Deploy to Kubernetes
+#     env:
+#       KUBECONFIG: ${{ secrets.KUBECONFIG }}
+#     run: |
+#       kubectl set image deployment/go-web-application go-web-application=$DOCKER_IMAGE:$DOCKER_TAG
+#       kubectl rollout status deployment/go-web-application
 
-  #  steps:
-  #  - name: Checkout code
-  #    uses: actions/checkout@v3
-
-   # - name: Deploy to Kubernetes
-   #   env:
-   #     KUBECONFIG: ${{ secrets.KUBECONFIG }}
-   #   run: |
-   #     kubectl set image deployment/go-web-application go-web-application=$DOCKER_IMAGE:$DOCKER_TAG
-   #     kubectl rollout status deployment/go-web-application
-
-#Updating the helm file with new image tag
 update-newtag-in-helm-chart:
   runs-on: ubuntu-latest
-
-  needs: push
+  needs: build
 
   steps:
     - name: Checkout repository
@@ -88,7 +84,7 @@ update-newtag-in-helm-chart:
 
     - name: Update tag in Helm chart
       run: |
-        sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm/go-app-chart/values.yaml
+        sed -i 's/tag: .*/tag: "${{ env.DOCKER_TAG }}"/' helm/go-app-chart/values.yaml
 
     - name: Commit and push changes
       run: |
@@ -97,4 +93,3 @@ update-newtag-in-helm-chart:
         git add helm/go-app-chart/values.yaml
         git commit -m 'Update tag in Helm chart'
         git push 
-     
